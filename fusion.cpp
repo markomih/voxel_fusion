@@ -43,9 +43,51 @@ void fusion_cpu(const Views& views, const TsdfFusionFunctor functor, float vx_si
     }
 }
 
+void rgb_fusion_cpu(const Views& views, const TsdfFusionFunctor functor, float vx_size, int n_threads, Volume& vol) {
+    int vx_res3 = vol.depth_ * vol.height_ * vol.width_;
+
+#if defined(_OPENMP)
+    omp_set_num_threads(n_threads);
+#endif
+#pragma omp parallel for
+    for(int idx = 0; idx < vx_res3; ++idx) {
+        int d,h,w;
+        fusion_idx2dhw(idx, vol.width_,vol.height_, d,h,w);
+        float sdf = volume_get(&vol, d, h, w);
+        if (functor.truncation_ == sdf) continue;
+
+        float x,y,z;
+        fusion_dhw2xyz(d,h,w, vx_size, x,y,z);
+
+//        functor.before_sample(&vol, d,h,w);
+        int n_valid_views = 0;
+        for(int vidx = 0; vidx < views.n_views_; ++vidx) {
+            float ur, vr, vx_d;
+            fusion_project(&views, vidx, x,y,z, ur,vr,vx_d);
+
+            int u = int(ur + 0.5f);
+            int v = int(vr + 0.5f);
+            // printf("  vx %d,%d,%d has center %f,%f,%f and projects to uvd=%f,%f,%f\n", w,h,d, x,y,z, ur,vr,vx_d);
+
+            if (u >= 0 && v >= 0 && u < views.cols_ && v < views.rows_) {
+                int rgb_idx = ((vidx * views.rows_ + v) * views.cols_ + u)*Volume::COLOR_CHANNELS;
+                int r = views.rgb_images_[rgb_idx+0];
+                int g = views.rgb_images_[rgb_idx+1];
+                int b = views.rgb_images_[rgb_idx+2];
+                // printf("    is on depthmap[%d,%d] with depth=%f, diff=%f\n", views.cols_,views.rows_, dm_d, dm_d - vx_d);
+                functor.new_color_sample(&vol,r,g,b, d,h,w);
+                n_valid_views++;
+            }
+        } // for vidx
+        functor.div_color(&vol, d,h,w, n_valid_views);
+    }
+}
+
+
 
 void fusion_tsdf_cpu(const Views &views, float vx_size, float truncation, bool unknown_is_free, int n_threads, Volume &vol) {
     TsdfFusionFunctor functor(truncation, unknown_is_free);
     fusion_cpu(views, functor, vx_size, n_threads, vol);
+    rgb_fusion_cpu(views, functor, vx_size, n_threads, vol);
 }
 
