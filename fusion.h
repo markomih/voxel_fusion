@@ -19,7 +19,10 @@ public:
     float* Rs_;
     float* Ts_;
 
-    Views() : n_views_(0), depthmaps_(0), rgb_images_(0), rows_(0), cols_(0), Ks_(0), Rs_(0), Ts_(0) {}
+    float* Ks_inv_;
+    float* cam2world_;
+
+    Views() : n_views_(0), depthmaps_(0), rgb_images_(0), rows_(0), cols_(0), Ks_(0), Rs_(0), Ts_(0), Ks_inv_(0), cam2world_(0) {}
 };
 
 class Volume {
@@ -30,9 +33,11 @@ public:
     float* data_;
 
     int* rgb_data_;
+    float* color_kernel_;
+    int kernel_size_;
     static const int COLOR_CHANNELS=3;
 
-    Volume() : depth_(0), height_(0), width_(0), data_(0), rgb_data_(0) {}
+    Volume() : depth_(0), height_(0), width_(0), data_(0), rgb_data_(0), color_kernel_(0), kernel_size_(0) {}
 };
 
 // index conversion
@@ -53,13 +58,18 @@ inline void fusion_idx2dhw(int idx, int width, int height, int& d, int& h, int &
 }
 
 //FUSION_FUNCTION
-inline void fusion_dhw2xyz(int d, int h, int w, float vx_size, float& x, float& y, float& z) {
+inline void fusion_dhw2xyz(int d, int h, int w, float vx_size, float& x, float& y, float& z) { // TODO fix it to work with BOX_SIZE
     // +0.5: move vx_center from (0,0,0) to (0.5,0.5,0.5), therefore vx range in [0, 1)
     // *vx_size: scale from [0,vx_resolution) to [0,1)
     // -0.5: move box to center, resolution [-.5,0.5)
     x = ((w + 0.5) * vx_size) - 0.5;
     y = ((h + 0.5) * vx_size) - 0.5;
     z = ((d + 0.5) * vx_size) - 0.5;
+}
+inline void xyz2dhw(float x, float y, float z, float vx_size, int& d, int&h, int& w) { // TODO fix it to work with BOX_SIZE
+    w = int((x + 0.5) * vx_size - 0.5);
+    h = int((y + 0.5) * vx_size - 0.5);
+    d = int((z + 0.5) * vx_size - 0.5);
 }
 
 //FUSION_FUNCTION
@@ -79,6 +89,20 @@ inline void fusion_project(const Views* views, int vidx, float x, float y, float
     u /= d;
     v /= d;
 }
+
+inline void uvd2xyz(const Views* views, int vidx, float u, float v, float d, float& x, float& y, float& z){
+    float* K_inv = views->Ks_inv_ + vidx*9;
+    float* cam2world = views->cam2world_ + vidx*12;
+
+    float x_ = K_inv[0]*u + K_inv[1]*v + K_inv[2]*d;
+    float y_ = K_inv[3]*u + K_inv[4]*v + K_inv[5]*d;
+    float z_ = K_inv[6]*u + K_inv[7]*v + K_inv[8]*d;
+
+    x = cam2world[0]*x_ + cam2world[1]*y_ + cam2world[2]*z_ + cam2world[3];
+    y = cam2world[4]*x_ + cam2world[5]*y_ + cam2world[6]*z_ + cam2world[7];
+    z = cam2world[8]*x_ + cam2world[9]*y_ + cam2world[10]*z_ + cam2world[11];
+}
+
 
 // VOLUME ACCESS FUNCTIONS
 inline float volume_get(const Volume* vol, int d, int h, int w) {
