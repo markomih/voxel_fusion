@@ -32,6 +32,7 @@ cdef extern from "fusion.h":
     int depth_;
     int height_;
     int width_;
+    float box_size_;
     float* data_;
 
     int* rgb_data_;
@@ -92,8 +93,9 @@ cdef class PyViews:
 cdef class PyVolume:
   cdef Volume vol
 
-  def __init__(self, float[:,:,::1] data, int[:,:,:,::1] rgb_data, float[:,:,::1] color_kernel, int kernel_size):
+  def __init__(self, float box_size, float[:,:,::1] data, int[:,:,:,::1] rgb_data, float[:,:,::1] color_kernel, int kernel_size):
     self.vol = Volume()
+    self.vol.box_size_ = box_size
     self.vol.rgb_data_ = &(rgb_data[0,0,0,0])
     self.vol.data_ = &(data[0,0,0])
     self.vol.color_kernel_ = &(color_kernel[0,0,0])
@@ -102,14 +104,15 @@ cdef class PyVolume:
     self.vol.height_ = data.shape[1]
     self.vol.width_ = data.shape[2]
 
-def tsdf_cpu(PyViews views, np.ndarray np_color_kernel, int depth, int height, int width, float vx_size, float truncation, bool unknown_is_free, int n_threads=8, rgb=True):
+def tsdf_cpu(PyViews views, np.ndarray np_color_kernel, int depth, int height, int width, float vx_size, float truncation, bool unknown_is_free, int n_threads=8, float box_size=0.5):
   vol = np.empty((depth, height, width), dtype=np.float32)
   rgb_vol = np.zeros((depth, height, width, 3), dtype=np.int32)
   cdef float[:,:,::1] vol_view = vol
   cdef float[:,:,::1] vol_color_kernel = np_color_kernel
   cdef int[:,:,:,::1] rgb_vol_view = rgb_vol
   cdef int kernel_size = np_color_kernel.shape[0]
+  cdef float volume_box_size = box_size
   print(vol.shape)
-  cdef PyVolume py_vol = PyVolume(vol_view, rgb_vol, vol_color_kernel, kernel_size)
+  cdef PyVolume py_vol = PyVolume(volume_box_size, vol_view, rgb_vol, vol_color_kernel, kernel_size)
   fusion_tsdf_cpu(views.views, vx_size, truncation, unknown_is_free, n_threads, py_vol.vol)
   return vol, rgb_vol

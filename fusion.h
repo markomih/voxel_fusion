@@ -30,6 +30,7 @@ public:
     int depth_;
     int height_;
     int width_;
+    float box_size_;
     float* data_;
 
     int* rgb_data_;
@@ -37,7 +38,7 @@ public:
     int kernel_size_;
     static const int COLOR_CHANNELS=3;
 
-    Volume() : depth_(0), height_(0), width_(0), data_(0), rgb_data_(0), color_kernel_(0), kernel_size_(0) {}
+    Volume() : depth_(0), height_(0), width_(0), box_size_(0), data_(0), rgb_data_(0), color_kernel_(0), kernel_size_(0) {}
 };
 
 // index conversion
@@ -58,18 +59,24 @@ inline void fusion_idx2dhw(int idx, int width, int height, int& d, int& h, int &
 }
 
 //FUSION_FUNCTION
-inline void fusion_dhw2xyz(int d, int h, int w, float vx_size, float& x, float& y, float& z) { // TODO fix it to work with BOX_SIZE
+inline void fusion_dhw2xyz(int d, int h, int w, float vx_size, float& x, float& y, float& z, float box_size) {
     // +0.5: move vx_center from (0,0,0) to (0.5,0.5,0.5), therefore vx range in [0, 1)
     // *vx_size: scale from [0,vx_resolution) to [0,1)
     // -0.5: move box to center, resolution [-.5,0.5)
-    x = ((w + 0.5) * vx_size) - 0.5;
-    y = ((h + 0.5) * vx_size) - 0.5;
-    z = ((d + 0.5) * vx_size) - 0.5;
+    x = (((float)w + 0.5f) * vx_size) - 0.5f;
+    y = (((float)h + 0.5f) * vx_size) - 0.5f;
+    z = (((float)d + 0.5f) * vx_size) - 0.5f;
+
+    x = x*box_size*2.0f;
+    y = y*box_size*2.0f;
+    z = z*box_size*2.0f;
 }
-inline void xyz2dhw(float x, float y, float z, float vx_size, int& d, int&h, int& w) { // TODO fix it to work with BOX_SIZE
-    w = int((x + 0.5) / vx_size - 0.5);
-    h = int((y + 0.5) / vx_size - 0.5);
-    d = int((z + 0.5) / vx_size - 0.5);
+inline void xyz2dhw(float x, float y, float z, float vx_size, int& d, int&h, int& w, float box_size) {
+    float scaling = 1.0f/(box_size*2.0f);
+
+    w = int((scaling*x + 0.5f) / vx_size - 0.5f);
+    h = int((scaling*y + 0.5f) / vx_size - 0.5f);
+    d = int((scaling*z + 0.5f) / vx_size - 0.5f);
 }
 
 //FUSION_FUNCTION

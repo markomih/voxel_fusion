@@ -20,7 +20,7 @@ void fusion_cpu(const Views& views, const TsdfFusionFunctor functor, float vx_si
         int d,h,w;
         fusion_idx2dhw(idx, vol.width_,vol.height_, d,h,w);
         float x,y,z;
-        fusion_dhw2xyz(d,h,w, vx_size, x,y,z);
+        fusion_dhw2xyz(d,h,w, vx_size, x,y,z, vol.box_size_);
 
         functor.before_sample(&vol, d,h,w);
         bool run = true;
@@ -87,9 +87,10 @@ void rgb_splatting_cpu(const Views& views, const TsdfFusionFunctor functor, floa
                 if (depth == -1) continue;
                 float x,y,z;
                 uvd2xyz(&views, vidx, float(u), float(v),depth,x,y,z);
-                if (fabsf(x) > 0.5 || fabsf(y) > 0.5 || fabsf(z) > 0.5) continue; // TODO fix it to work with BOX_SIZE
+                if (fabsf(x) > vol.box_size_ || fabsf(y) > vol.box_size_ || fabsf(z) > vol.box_size_)
+                    continue;
                 int d,h,w;
-                xyz2dhw(x,y,z,vx_size, d, h, w);
+                xyz2dhw(x,y,z,vx_size, d, h, w, vol.box_size_);
 
                 // no need to store colors that are not on the border
                 float sdf = volume_get(&vol, d,h,w);
@@ -132,7 +133,7 @@ void rgb_fusion_cpu(const Views& views, const TsdfFusionFunctor functor, float v
         if (functor.truncation_ == sdf) continue;
 
         float x,y,z;
-        fusion_dhw2xyz(d,h,w, vx_size, x,y,z);
+        fusion_dhw2xyz(d,h,w, vx_size, x,y,z, vol.box_size_);
 
 //        functor.before_sample(&vol, d,h,w);
         int n_valid_views = 0;
