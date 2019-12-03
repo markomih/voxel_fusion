@@ -67,9 +67,9 @@ inline void fusion_dhw2xyz(int d, int h, int w, float vx_size, float& x, float& 
     z = ((d + 0.5) * vx_size) - 0.5;
 }
 inline void xyz2dhw(float x, float y, float z, float vx_size, int& d, int&h, int& w) { // TODO fix it to work with BOX_SIZE
-    w = int((x + 0.5) * vx_size - 0.5);
-    h = int((y + 0.5) * vx_size - 0.5);
-    d = int((z + 0.5) * vx_size - 0.5);
+    w = int((x + 0.5) / vx_size - 0.5);
+    h = int((y + 0.5) / vx_size - 0.5);
+    d = int((z + 0.5) / vx_size - 0.5);
 }
 
 //FUSION_FUNCTION

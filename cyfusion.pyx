@@ -102,12 +102,13 @@ cdef class PyVolume:
     self.vol.height_ = data.shape[1]
     self.vol.width_ = data.shape[2]
 
-def tsdf_cpu(PyViews views, np.ndarray np_color_kernel, int kernel_size, int depth, int height, int width, float vx_size, float truncation, bool unknown_is_free, int n_threads=8, rgb=True):
+def tsdf_cpu(PyViews views, np.ndarray np_color_kernel, int depth, int height, int width, float vx_size, float truncation, bool unknown_is_free, int n_threads=8, rgb=True):
   vol = np.empty((depth, height, width), dtype=np.float32)
   rgb_vol = np.zeros((depth, height, width, 3), dtype=np.int32)
   cdef float[:,:,::1] vol_view = vol
   cdef float[:,:,::1] vol_color_kernel = np_color_kernel
   cdef int[:,:,:,::1] rgb_vol_view = rgb_vol
+  cdef int kernel_size = np_color_kernel.shape[0]
   print(vol.shape)
   cdef PyVolume py_vol = PyVolume(vol_view, rgb_vol, vol_color_kernel, kernel_size)
   fusion_tsdf_cpu(views.views, vx_size, truncation, unknown_is_free, n_threads, py_vol.vol)
