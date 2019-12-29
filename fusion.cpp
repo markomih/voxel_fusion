@@ -161,10 +161,15 @@ void rgb_fusion_cpu(const Views& views, const TsdfFusionFunctor functor, float v
 
 
 
-void fusion_tsdf_cpu(const Views &views, float vx_size, float truncation, bool unknown_is_free, int n_threads, Volume &vol) {
+void color_fusion_tsdf_cpu(const Views &views, float vx_size, float truncation, bool unknown_is_free, int n_threads, Volume &vol) {
     TsdfFusionFunctor functor(truncation, unknown_is_free);
     fusion_cpu(views, functor, vx_size, n_threads, vol);
 //    rgb_fusion_cpu(views, functor, vx_size, n_threads, vol);
     rgb_splatting_cpu(views, functor, vx_size, n_threads, vol);
+}
+
+void fusion_tsdf_cpu(const Views &views, float vx_size, float truncation, bool unknown_is_free, int n_threads, Volume &vol) {
+    TsdfFusionFunctor functor(truncation, unknown_is_free);
+    fusion_cpu(views, functor, vx_size, n_threads, vol);
 }
 

@@ -181,6 +181,7 @@ struct TsdfFusionFunctor {
 };
 
 
+void color_fusion_tsdf_cpu(const Views& views, float vx_size, float truncation, bool unknown_is_free, int n_threads, Volume& vol);
 void fusion_tsdf_cpu(const Views& views, float vx_size, float truncation, bool unknown_is_free, int n_threads, Volume& vol);
 
 #endif //VOXEL_FUSION_FUSION_H
