@@ -98,6 +98,7 @@ inline void fusion_project(const Views* views, int vidx, float x, float y, float
 }
 
 inline void uvd2xyz(const Views* views, int vidx, float u, float v, float d, float& x, float& y, float& z){
+    throw "Inversion is not correct";
     float* K_inv = views->Ks_inv_ + vidx*9;
     float* cam2world = views->cam2world_ + vidx*12;
 
