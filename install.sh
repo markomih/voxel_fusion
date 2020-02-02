@@ -14,4 +14,6 @@ make
 
 cd ..
 python setup.py build_ext --inplace
-cp -R ~/projects/voxel_fusion /home/marko/.conda/envs/differentiable_rendering/lib/python3.5/site-packages
+#cp -R ~/projects/voxel_fusion /home/marko/.conda/envs/differentiable_rendering/lib/python3.5/site-packages
+#cp -R ~/voxel_fusion /cluster/home/markomih/.virtualenvs/py36/lib/python3.6/site-packages
+cp -R ~/voxel_fusion /cluster/home/markomih/.local/lib64/python3.6/site-packages
