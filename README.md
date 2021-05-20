@@ -10,5 +10,5 @@ make
 
 cd ..
 
-pip install -e .
+pip install .
 ```
